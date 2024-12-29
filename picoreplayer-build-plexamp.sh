@@ -6,7 +6,7 @@ RW_PATH=/mnt/mmcblk0p2/tce
 DATA_PATH="~/.local/Plexamp"
 
 echo "Installing required packages"
-tce-load -wi squashfs-tools bash curl node.js-v20
+tce-load -wil squashfs-tools curl
 
 echo "Creating extension structure in tmp"
 mkdir -p ${TMP_PATH_WORKDIR}/build
@@ -39,8 +39,6 @@ tar jxf "$FILE_PATH" -C "${TMP_PATH_EXTENSION}/usr/local/lib"
 echo "Preparing extension"
 echo -e '#!/bin/sh\nnode /usr/local/lib/plexamp/js/index.js' > ${TMP_PATH_EXTENSION}/usr/local/bin/plexamp
 chmod +x ${TMP_PATH_EXTENSION}/usr/local/bin/plexamp
-echo -e '#!/bin/sh\nnode /usr/local/lib/plexamp/js/index-browser.js' > ${TMP_PATH_EXTENSION}/usr/local/bin/plexamp-browser
-chmod +x ${TMP_PATH_EXTENSION}/usr/local/bin/plexamp-browser
 cat <<EOF > ${TMP_PATH_EXTENSION}/usr/local/tce.installed/plexamp
 #!/bin/sh
 # Check if the folder is already in /opt/.filetool.lst
@@ -56,17 +54,19 @@ EOF
 chmod +x ${TMP_PATH_EXTENSION}/usr/local/tce.installed/plexamp
 
 echo "Running setup. Please follow instructions"
-node ${TMP_PATH_EXTENSION}/usr/local/lib/plexamp/js/index-browser.js
+node ${TMP_PATH_EXTENSION}/usr/local/lib/plexamp/js/index.js
 echo "Setup done, resuming script"
 
 echo "Packaging extension"
 mksquashfs ${TMP_PATH_EXTENSION} ${TMP_PATH_WORKDIR}/build/plexamp.tcz
-echo -e "bash.tcz\nnode.js.tcz" > ${TMP_PATH_WORKDIR}/build/plexamp.tcz.dep
+echo -e "bash.tcz\nnode.js-v20.tcz" > ${TMP_PATH_WORKDIR}/build/plexamp.tcz.dep
 (cd ${TMP_PATH_WORKDIR}/build; md5sum plexamp.tcz > plexamp.tcz.md5.txt)
 
 echo -n "Installing"
 cp ${TMP_PATH_WORKDIR}/build/* ${RW_PATH}/optional/
-echo plexamp.tcz >> ${RW_PATH}/onboot.lst
+if ! grep -q "^plexamp.tcz$" ${RW_PATH}/onboot.lst; then
+    echo "plexamp.tcz" >> ${RW_PATH}/onboot.lst
+fi
 
 rm -r ${TMP_PATH}
 echo "Finished! Please reboot"
